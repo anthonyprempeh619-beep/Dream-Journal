@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "DreamEntry": {
+      "title": "Dream Entry",
+      "description": "A user's logged dream with a vibe tag.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The description of the dream."
+        },
+        "vibe": {
+          "type": "string",
+          "description": "The vibe tag of the dream."
+        },
+        "vibeEmoji": {
+          "type": "string",
+          "description": "The emoji representing the vibe."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the dream was logged."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who logged the dream."
+        }
+      },
+      "required": ["text", "vibe", "vibeEmoji", "createdAt", "userId"]
+    }
+  },
+  "firestore": {
+    "/dreams/{dreamId}": {
+      "schema": {
+        "$ref": "#/entities/DreamEntry"
+      },
+      "description": "Stores user dream entries."
+    }
+  }
+}

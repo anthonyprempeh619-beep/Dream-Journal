@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: dreams
+    // Document ID: auto-generated
+    // Fields:
+    //   - text: string (required, max 5000 chars) - The dream description
+    //   - vibe: string (required, max 50 chars) - The vibe tag
+    //   - vibeEmoji: string (required, max 10 chars) - The emoji for the vibe
+    //   - createdAt: timestamp (required) - When it was logged
+    //   - userId: string (required) - The owner's user ID
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function uidUnchanged() {
+      return !('userId' in request.resource.data) ||
+             request.resource.data.userId == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('userId' in request.resource.data) ||
+             request.resource.data.userId == resource.data.userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidDream(data) {
+      return hasRequiredFields(['text', 'vibe', 'vibeEmoji', 'createdAt', 'userId']) &&
+             validStringLength('text', 1, 5000) &&
+             validStringLength('vibe', 1, 50) &&
+             validStringLength('vibeEmoji', 1, 10) &&
+             data.createdAt is timestamp &&
+             data.userId is string &&
+             data.userId == request.auth.uid;
+    }
+
+    match /dreams/{dreamId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidDream(request.resource.data) && uidUnchanged();
+      allow update: if isDocOwner() && isValidDream(request.resource.data) && uidNotModified() && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isDocOwner();
+    }
+  }
+}
