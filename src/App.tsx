@@ -364,7 +364,7 @@ export default function App() {
             <div className="p-3 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-xl">
               <Sparkles className="w-6 h-6 text-[#b39ddb]" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Dream Journal</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Dream General</h1>
           </div>
           {user && (
             <div className="flex items-center gap-3">
