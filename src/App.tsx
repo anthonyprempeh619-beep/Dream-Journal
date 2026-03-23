@@ -114,6 +114,22 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Session refresh logic: If it's a new day, sign out to ensure a fresh login
+    const checkDailyRefresh = async () => {
+      const today = new Date().toDateString();
+      const lastRefresh = localStorage.getItem('last_session_refresh');
+      
+      if (lastRefresh && lastRefresh !== today) {
+        await supabase.auth.signOut();
+        localStorage.removeItem('last_session_refresh');
+        window.location.replace('/');
+        return;
+      }
+      localStorage.setItem('last_session_refresh', today);
+    };
+
+    checkDailyRefresh();
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setIsAuthReady(true);
@@ -122,6 +138,11 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setIsAuthReady(true);
+      // Clear credentials state when session changes to ensure privacy
+      if (!session) {
+        setEmail('');
+        setPassword('');
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -293,7 +314,7 @@ export default function App() {
     setDreams(prev => prev.filter(d => d.id !== id));
 
     try {
-      const { error } = await supabase.from('dreams').delete().eq('id', id);
+      const { error } = await supabase.from('dreams').delete().eq('id', id).eq('user_id', user.id);
       if (error) throw error;
     } catch (error) {
       // Rollback
@@ -324,7 +345,7 @@ export default function App() {
     setEditText('');
 
     try {
-      const { error } = await supabase.from('dreams').update({ text: savedText }).eq('id', id);
+      const { error } = await supabase.from('dreams').update({ text: savedText }).eq('id', id).eq('user_id', user.id);
       if (error) throw error;
     } catch (error) {
       // Rollback
@@ -868,7 +889,7 @@ export default function App() {
             <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#8e7cc3] to-[#b39ddb] rounded-full blur-xl opacity-50 mb-6"></div>
             <h2 className="text-2xl font-bold text-white mb-4 text-center">Unlock your subconscious</h2>
             <p className="text-slate-400 text-center mb-8">
-              Sign in to start logging your dreams, tracking your vibes, and exploring your midnight adventures.
+              Login to start logging your dreams, tracking your vibes, and exploring your midnight adventures.
             </p>
             <form onSubmit={handleAuth} className="space-y-4">
               {authError && <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-sm">{authError}</div>}
@@ -879,6 +900,8 @@ export default function App() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#b39ddb]/50"
                 required
+                autoComplete="off"
+                data-lpignore="true"
               />
               <input
                 type="password"
@@ -887,13 +910,15 @@ export default function App() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#b39ddb]/50"
                 required
+                autoComplete="new-password"
+                data-lpignore="true"
               />
               <button
                 type="submit"
                 disabled={authLoading}
                 className="w-full px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#8e7cc3] to-[#b39ddb] text-black font-semibold shadow-lg hover:shadow-[#b39ddb]/25 hover:opacity-90 transition-all disabled:opacity-50"
               >
-                {authLoading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+                {authLoading ? 'Please wait...' : (isSignUp ? 'Sign In' : 'Login')}
               </button>
               <div className="text-center mt-4">
                 <button
@@ -901,7 +926,7 @@ export default function App() {
                   onClick={() => setIsSignUp(!isSignUp)}
                   className="text-sm text-[#b39ddb] hover:text-white transition-colors"
                 >
-                  {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                  {isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign In"}
                 </button>
               </div>
             </form>
