@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from './supabase';
-import { Trash2, LogIn, LogOut, Sparkles, Edit2, X, Check, User, ArrowLeft, AlertCircle, Plus, Calendar, Camera, Loader2, Settings } from 'lucide-react';
+import { Trash2, LogIn, LogOut, Sparkles, Edit2, X, Check, User, ArrowLeft, AlertCircle, Plus, Calendar, Camera, Loader2, Settings, Box, Video } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import Background3D from './components/Background3D';
 
 const VIBES = [
   { id: 'lucid', emoji: '☁️', label: 'Lucid' },
@@ -48,6 +49,8 @@ export default function App() {
   const [isSavingVibe, setIsSavingVibe] = useState(false);
   const [dreamDate, setDreamDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [show3D, setShow3D] = useState(true);
+  const [active3DMode, setActive3DMode] = useState<'stars' | 'video'>('stars');
   const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -334,6 +337,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#050814] text-slate-200 font-sans relative overflow-hidden selection:bg-[#b39ddb]/30">
+      <Suspense fallback={<div className="fixed inset-0 bg-[#050814]" />}>
+        {show3D && <Background3D mode={active3DMode} />}
+      </Suspense>
+      
       <AnimatePresence>
         {appError && (
           <motion.div
@@ -351,12 +358,14 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Starry background effect */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#b39ddb]/10 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-[30rem] h-[30rem] bg-indigo-500/10 rounded-full blur-[120px]"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-50"></div>
-      </div>
+      {/* Starry background effect - only show if 3D is off */}
+      {!show3D && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#b39ddb]/10 rounded-full blur-[100px]"></div>
+          <div className="absolute bottom-1/3 right-1/4 w-[30rem] h-[30rem] bg-indigo-500/10 rounded-full blur-[120px]"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-50"></div>
+        </div>
+      )}
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between mb-12">
@@ -367,7 +376,40 @@ export default function App() {
             <h1 className="text-3xl font-bold tracking-tight text-white">Dream General</h1>
           </div>
           {user && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  if (!show3D) {
+                    setShow3D(true);
+                    setActive3DMode('stars');
+                  } else if (active3DMode === 'stars') {
+                    setActive3DMode('video');
+                  } else {
+                    setShow3D(false);
+                  }
+                }}
+                className={`p-2 rounded-xl backdrop-blur-md border transition-all ${
+                  show3D 
+                    ? 'bg-[#b39ddb]/20 border-[#b39ddb]/30 text-[#b39ddb]' 
+                    : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                }`}
+                title={
+                  !show3D 
+                    ? "Enable 3D (Stars Mode)" 
+                    : active3DMode === 'stars' 
+                      ? "Switch to 3D (Video Mode)" 
+                      : "Disable 3D Background"
+                }
+              >
+                {!show3D ? (
+                  <Box className="w-5 h-5" />
+                ) : active3DMode === 'stars' ? (
+                  <Video className="w-5 h-5" />
+                ) : (
+                  <Sparkles className="w-5 h-5" />
+                )}
+              </button>
+              <div className="flex items-center gap-3">
               {currentView === 'profile' ? (
                 <button
                   onClick={() => setCurrentView('journal')}
@@ -398,6 +440,7 @@ export default function App() {
                 </button>
               )}
             </div>
+          </div>
           )}
         </header>
 
