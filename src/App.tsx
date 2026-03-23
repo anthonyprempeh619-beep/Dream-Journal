@@ -201,6 +201,8 @@ export default function App() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
+      setEmail('');
+      setPassword('');
     } catch (error: any) {
       setAuthError(getFriendlyErrorMessage(error));
     } finally {
@@ -211,6 +213,10 @@ export default function App() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
+      setEmail('');
+      setPassword('');
+      // Refresh the page and replace the current history entry to "leave history behind"
+      window.location.replace('/');
     } catch (error) {
       console.error("Error signing out", error);
     }
